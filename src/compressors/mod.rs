@@ -1,11 +1,8 @@
-// compressors/mod.rs — Phase 3: Compressor module entry point
-//
-// This module will grow every phase:
-//   Phase 3 → gzip
-//   Phase 4 → lz4, zstd
-//   Phase 5 → selector picks between them
+// compressors/mod.rs — Phase 4: updated with lz4 + zstd
 
-pub mod traits;  // the Compressor trait
-pub mod gzip;    // our first implementation
+pub mod traits;
+pub mod gzip;
+pub mod lz4;   // NEW
+pub mod zstd;  // NEW
 
 pub use traits::{Compressor, CompressionResult};

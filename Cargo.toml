@@ -8,4 +8,4 @@ name = "alpress"
 path = "src/main.rs"
 
 [dependencies]
-# Phase 3 onwards — nothing needed yet!
+flate2 = "1.0"   # Gzip compression — our first real algorithm!

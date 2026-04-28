@@ -9,6 +9,7 @@ mod header;
 mod archive;
 mod cli;
 mod benchmark;
+mod sampler; 
 
 use clap::Parser;
 use cli::{Cli, Commands};

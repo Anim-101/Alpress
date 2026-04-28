@@ -254,7 +254,8 @@ impl AlgorithmSelector {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::analyzer::{FileProfile, FileType};
+    use crate::analyzer::FileProfile;
+    use crate::analyzer::file_type::FileType;
 
     // Helper to build a fake profile for testing
     fn make_profile(

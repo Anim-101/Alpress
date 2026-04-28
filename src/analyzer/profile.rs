@@ -5,23 +5,32 @@ use crate::stats;
 
 #[derive(Debug, Clone)]
 pub struct FileProfile {
-    pub size_bytes:           u64,
-    pub entropy:              f64,
-    pub file_type:            FileType,
-    pub byte_diversity:       f64,
+    pub size_bytes:            u64,
+    pub entropy:               f64,
+    pub file_type:             FileType,
+    pub byte_diversity:        f64,
     pub compressibility_score: f64,
 }
 
 impl FileProfile {
     pub fn analyze(bytes: &[u8]) -> FileProfile {
-        let size_bytes          = bytes.len() as u64;
-        let entropy             = stats::shannon_entropy(bytes);
-        let file_type           = FileType::detect(bytes);
-        let unique_bytes        = stats::unique_byte_count(bytes);
-        let byte_diversity      = unique_bytes as f64 / 256.0;
+        // Use sampler for large files — much faster on big inputs
+        let (sample, _info) = crate::sampler::sample(bytes);
+
+        let size_bytes            = bytes.len() as u64; // always the REAL size
+        let entropy               = stats::shannon_entropy(&sample);
+        let file_type             = FileType::detect(bytes); // always check real magic bytes
+        let unique_bytes          = stats::unique_byte_count(&sample);
+        let byte_diversity        = unique_bytes as f64 / 256.0;
         let compressibility_score = estimate_compressibility(entropy, &file_type, byte_diversity);
 
-        FileProfile { size_bytes, entropy, file_type, byte_diversity, compressibility_score }
+        FileProfile {
+            size_bytes,
+            entropy,
+            file_type,
+            byte_diversity,
+            compressibility_score,
+        }
     }
 
     pub fn print_summary(&self) {

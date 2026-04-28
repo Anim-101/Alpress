@@ -1,6 +1,6 @@
 // stats.rs — Phase 1: File Statistics
 
-pub fn print_stats(file_path: &str, bytes: &[u8]) {
+pub fn print_stats(_file_path: &str, bytes: &[u8]) {
     print_size(bytes);
     println!();
 

@@ -1,74 +1,108 @@
-// main.rs — Phase 5: The Decision Engine
+// main.rs — Phase 6: Real file compression + decompression
 
 mod stats;
 mod analyzer;
 mod compressors;
 mod errors;
-mod selector; // NEW
+mod selector;
+mod header;  // NEW
+mod archive; // NEW
 
-use selector::AlgorithmSelector;
 use std::env;
 use std::process;
 
 fn main() {
     let args: Vec<String> = env::args().collect();
 
-    if args.len() < 2 {
-        eprintln!("Usage:   {} <file_path>", args[0]);
-        eprintln!("Example: {} src/main.rs", args[0]);
+    if args.len() < 3 {
+        print_usage(&args[0]);
         process::exit(1);
     }
 
-    let file_path = &args[1];
+    let command   = &args[1];
+    let input     = &args[2];
 
-    match std::fs::read(file_path) {
-        Ok(bytes) => {
-            println!("\n✅ Read: {}  ({} bytes)\n", file_path, bytes.len());
+    match command.as_str() {
+        // ── compress ──────────────────────────────────────────────────────
+        "compress" => {
+            // Output path: either provided or auto-generated (.alp)
+            let output = if args.len() >= 4 {
+                args[3].clone()
+            } else {
+                format!("{}.alp", input)
+            };
 
-            // Phase 2: profile the file
-            let profile = analyzer::FileProfile::analyze(&bytes);
-            profile.print_summary();
-            println!();
+            println!("\n🗜️  Compressing '{}' → '{}'\n", input, output);
 
-            // Phase 5: let the selector decide
-            let selector = AlgorithmSelector::new();
-            let decision = selector.select(&profile);
-            decision.print_reasoning();
-            println!();
-
-            // Build and run the chosen compressor
-            match selector.build_compressor(&decision.algorithm) {
-                Ok(compressor) => {
-                    println!("🗜️  Compressing with {}...\n", compressor.name());
-
-                    match compressor.compress(&bytes) {
-                        Ok(result) => {
-                            result.print_summary();
-
-                            // Round-trip check
-                            match compressor.decompress(&result.data) {
-                                Ok(restored) if restored == bytes =>
-                                    println!("   🔁 Round-trip: ✅ PASSED"),
-                                Ok(_) =>
-                                    println!("   🔁 Round-trip: ❌ Data mismatch!"),
-                                Err(e) =>
-                                    println!("   🔁 Round-trip: ❌ {}", e),
-                            }
-                        }
-                        Err(e) => eprintln!("❌ Compression failed: {}", e),
-                    }
-                }
-
-                // AlreadyCompressed means the selector said "skip"
-                Err(e) => {
-                    println!("⏭️  {}", e);
-                    println!("   File left as-is — no compression applied.");
+            match archive::compress_file(input, &output) {
+                Ok(summary) => summary.print(),
+                Err(e)      => {
+                    eprintln!("❌ {}", e);
+                    process::exit(1);
                 }
             }
         }
-        Err(e) => {
-            eprintln!("❌ Failed to read '{}': {}", file_path, e);
+
+        // ── decompress ────────────────────────────────────────────────────
+        "decompress" => {
+            // Output path: either provided or strip .alp extension
+            let output = if args.len() >= 4 {
+                args[3].clone()
+            } else if input.ends_with(".alp") {
+                input.trim_end_matches(".alp").to_string()
+            } else {
+                format!("{}.restored", input)
+            };
+
+            println!("\n📂 Decompressing '{}' → '{}'\n", input, output);
+
+            match archive::decompress_file(input, &output) {
+                Ok(summary) => summary.print(),
+                Err(e)      => {
+                    eprintln!("❌ {}", e);
+                    process::exit(1);
+                }
+            }
+        }
+
+        // ── analyze ───────────────────────────────────────────────────────
+        // Still useful for inspecting a file before compressing
+        "analyze" => {
+            match std::fs::read(input) {
+                Ok(bytes) => {
+                    println!("\n✅ Read: {}  ({} bytes)\n", input, bytes.len());
+                    let profile = analyzer::FileProfile::analyze(&bytes);
+                    profile.print_summary();
+                    println!();
+                    let selector = selector::AlgorithmSelector::new();
+                    let decision = selector.select(&profile);
+                    decision.print_reasoning();
+                }
+                Err(e) => {
+                    eprintln!("❌ Cannot read '{}': {}", input, e);
+                    process::exit(1);
+                }
+            }
+        }
+
+        _ => {
+            eprintln!("❌ Unknown command: '{}'", command);
+            print_usage(&args[0]);
             process::exit(1);
         }
     }
+}
+
+fn print_usage(program: &str) {
+    println!("\nAlpress — Adaptive File Compressor");
+    println!();
+    println!("USAGE:");
+    println!("   {} compress   <input>        [output.alp]", program);
+    println!("   {} decompress <input.alp>    [output]", program);
+    println!("   {} analyze    <input>", program);
+    println!();
+    println!("EXAMPLES:");
+    println!("   {} compress   src/main.rs", program);
+    println!("   {} decompress src/main.rs.alp", program);
+    println!("   {} analyze    my_file.log", program);
 }

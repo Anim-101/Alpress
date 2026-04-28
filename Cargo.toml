@@ -8,6 +8,7 @@ name = "alpress"
 path = "src/main.rs"
 
 [dependencies]
-flate2 = "1.0"      # Gzip — Phase 3
-lz4    = "1.24"     # LZ4  — Phase 4 (speed-focused)
-zstd   = "0.13"     # Zstd — Phase 4 (best ratio/speed balance)
+flate2 = "1.0"    # Gzip
+lz4    = "1.24"   # LZ4
+zstd   = "0.13"   # Zstd
+crc32fast = "1.4" # Checksum for integrity verification — NEW Phase 6

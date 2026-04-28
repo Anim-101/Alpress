@@ -11,7 +11,7 @@
 //   Phase 4 gave us multiple algorithms + AlpressError
 //   Phase 5 wires them all together into one intelligent selector
 
-use crate::analyzer::{FileProfile, FileType};
+use crate::analyzer::FileProfile;
 use crate::errors::{AlpressError, AlpressResult};
 use crate::compressors::Compressor;
 use crate::compressors::gzip::{GzipCompressor, GzipLevel};

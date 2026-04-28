@@ -47,31 +47,22 @@ alpress benchmark myfile.txt
 ```
 
 ## How it works
-Any file
-│
-▼
-┌─────────────────────────────────┐
-│         Analysis layer          │
-│  Sampler → Stats → File type    │
-│         → FileProfile           │
-└─────────────────────────────────┘
-│
-▼
-┌─────────────────────────────────┐
-│         Decision engine         │
-│  Entropy + type + size          │
-│  → best algorithm               │
-└─────────────────────────────────┘
-│
-▼
-┌─────────────────────────────────┐
-│        Compression layer        │
-│   Gzip │ LZ4 │ Zstd │ Skip     │
-│   Header + CRC32 + data         │
-└─────────────────────────────────┘
-│
-▼
-.alp file on disk
+
+Alpress runs every file through three layers:
+
+**1. Analysis layer** — reads the file (or a smart sample for large files), calculates Shannon entropy, detects the file type from magic bytes, and builds a `FileProfile`.
+
+**2. Decision engine** — applies 8 ordered rules to the profile and picks the best algorithm. Skips compression entirely for already-compressed formats or high-entropy data.
+
+**3. Compression layer** — runs the chosen algorithm and writes a `.alp` file containing a 24-byte metadata header followed by the compressed data. Every decompress verifies the CRC32 checksum.
+
+```
+Any file  ──►  Analysis layer  ──►  Decision engine  ──►  Compression layer  ──►  .alp file
+               · Sampler             · Entropy                · Gzip
+               · Stats               · File type              · LZ4
+               · File type detect    · Size                   · Zstd
+               · FileProfile         └─► algorithm            · Skip (if not worth it)
+```
 
 ### Algorithm selection rules
 
